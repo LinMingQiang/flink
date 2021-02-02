@@ -23,6 +23,7 @@ import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.functions.NullByteKeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.cep.nfa.NFA;
 import org.apache.flink.cep.nfa.aftermatch.AfterMatchSkipStrategy;
@@ -77,8 +78,15 @@ public class CEPITCase extends AbstractTestBase {
 			new SubEvent(7, "bar", 3.0, 3.0),
 			new Event(42, "42", 42.0),
 			new Event(8, "end", 1.0)
-		);
-
+		)
+			.keyBy(new KeySelector<Event, Integer>() {
+				@Override
+				public Integer getKey(Event value) throws Exception {
+					System.out.println(value.getName() + ": " + value.getName().hashCode());
+					return value.getName().hashCode();
+				}
+			});
+;
 		Pattern<Event, ?> pattern = Pattern.<Event>begin("start").where(new SimpleCondition<Event>() {
 
 			@Override

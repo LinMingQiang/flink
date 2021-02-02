@@ -174,11 +174,12 @@ public class StreamingJobGraphGenerator {
 		for (StreamGraphHasher hasher : legacyStreamGraphHashers) {
 			legacyHashes.add(hasher.traverseStreamGraphAndGenerateHashes(streamGraph));
 		}
-
+ 		// 最重要的函数，生成JobVertex，JobEdge等，并尽可能地将多个节点chain在一起
 		setChaining(hashes, legacyHashes);
-
+		// 将每个JobVertex的入边集合也序列化到该JobVertex的StreamConfig中
 		setPhysicalEdges();
-
+ 		// 根据group name，为每个 JobVertex 指定所属的 SlotSharingGroup
+		// 以及针对 Iteration的头尾设置  CoLocationGroup
 		setSlotSharingAndCoLocation();
 
 		setManagedMemoryFraction(

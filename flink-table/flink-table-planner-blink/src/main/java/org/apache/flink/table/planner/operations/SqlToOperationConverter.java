@@ -190,7 +190,9 @@ public class SqlToOperationConverter {
 			CatalogManager catalogManager,
 			SqlNode sqlNode) {
 		// validate the query
+		// 校验 元数据， FlinkCalciteSqlValidator 用来校验的， SqlValidatorCatalogReader 是元数据的信息
 		final SqlNode validated = flinkPlanner.validate(sqlNode);
+		// 将 SqlNode转为 Operation（）里面包含了 RelRoot （逻辑计划（Logical Plan））
 		SqlToOperationConverter converter = new SqlToOperationConverter(flinkPlanner, catalogManager);
 		if (validated instanceof SqlCreateCatalog) {
 			return Optional.of(converter.convertCreateCatalog((SqlCreateCatalog) validated));

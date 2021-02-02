@@ -607,7 +607,7 @@ public class StreamGraphGenerator {
 			final Transformation<?> transform) {
 		checkNotNull(translator);
 		checkNotNull(transform);
-
+		// 获取 parent的ids
 		final List<Collection<Integer>> allInputIds = getParentInputIds(transform.getInputs());
 
 		// the recursive call might have already transformed this

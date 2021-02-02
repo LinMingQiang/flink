@@ -700,6 +700,7 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
 	@Override
 	public TableResult executeInternal(QueryOperation operation) {
 		SelectSinkOperation sinkOperation = new SelectSinkOperation(operation);
+		// 在这个方法里的 optimizer 做的 优化
 		List<Transformation<?>> transformations = translate(Collections.singletonList(sinkOperation));
 		String jobName = getJobName("collect");
 		Pipeline pipeline = execEnv.createPipeline(transformations, tableConfig, jobName);

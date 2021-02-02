@@ -522,7 +522,9 @@ public class StreamGraph implements Pipeline {
 			shuffleMode = virtualPartitionNodes.get(virtualId).f2;
 			addEdgeInternal(upStreamVertexID, downStreamVertexID, typeNumber, partitioner, outputNames, outputTag, shuffleMode);
 		} else {
+			// 上游StreamNode
 			StreamNode upstreamNode = getStreamNode(upStreamVertexID);
+			// 下游StreamNode
 			StreamNode downstreamNode = getStreamNode(downStreamVertexID);
 
 			// If no partitioner was specified and the parallelism of upstream and downstream
