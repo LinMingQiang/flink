@@ -43,13 +43,16 @@ public class RichSqlInsert extends SqlInsert {
 
 	private final SqlNodeList tableHints;
 
-	public RichSqlInsert(SqlParserPos pos,
-			SqlNodeList keywords,
-			SqlNodeList extendedKeywords,
-			SqlNode targetTable,
-			SqlNode source,
-			SqlNodeList columnList,
-			SqlNodeList staticPartitions) {
+	private SqlEmit emit = null;
+
+	public RichSqlInsert(
+		SqlParserPos pos,
+		SqlNodeList keywords,
+		SqlNodeList extendedKeywords,
+		SqlNode targetTable,
+		SqlNode source,
+		SqlNodeList columnList,
+		SqlNodeList staticPartitions) {
 		super(pos, keywords, targetTable, source, columnList);
 		this.extendedKeywords = extendedKeywords;
 		this.staticPartitions = staticPartitions;
@@ -63,15 +66,43 @@ public class RichSqlInsert extends SqlInsert {
 		}
 	}
 
+	public SqlEmit getEmit() {
+		return emit;
+	}
+
+	public RichSqlInsert(
+		SqlParserPos pos,
+		SqlNodeList keywords,
+		SqlNodeList extendedKeywords,
+		SqlNode targetTable,
+		SqlNode source,
+		SqlNodeList columnList,
+		SqlNodeList staticPartitions,
+		SqlEmit emit) {
+		super(pos, keywords, targetTable, source, columnList);
+		this.extendedKeywords = extendedKeywords;
+		this.staticPartitions = staticPartitions;
+		this.emit = emit;
+		if (targetTable instanceof SqlTableRef) {
+			SqlTableRef tableRef = (SqlTableRef) targetTable;
+			this.targetTableID = tableRef.operand(0);
+			this.tableHints = tableRef.operand(1);
+		} else {
+			this.targetTableID = targetTable;
+			this.tableHints = SqlNodeList.EMPTY;
+		}
+	}
+
 	/**
 	 * @return the list of partition key-value pairs,
-	 * returns empty if there is no partition specifications.
+	 * 	returns empty if there is no partition specifications.
 	 */
 	public SqlNodeList getStaticPartitions() {
 		return staticPartitions;
 	}
 
-	/** Get static partition key value pair as strings.
+	/**
+	 * Get static partition key value pair as strings.
 	 *
 	 * <p>For character literals we return the unquoted and unescaped values.
 	 * For other types we use {@link SqlLiteral#toString()} to get
@@ -79,7 +110,7 @@ public class RichSqlInsert extends SqlInsert {
 	 * what you need, use {@link #getStaticPartitions()}.
 	 *
 	 * @return the mapping of column names to values of partition specifications,
-	 * returns an empty map if there is no partition specifications.
+	 * 	returns an empty map if there is no partition specifications.
 	 */
 	public LinkedHashMap<String, String> getStaticPartitionKVs() {
 		LinkedHashMap<String, String> ret = new LinkedHashMap<>();
@@ -89,7 +120,8 @@ public class RichSqlInsert extends SqlInsert {
 		for (SqlNode node : this.staticPartitions.getList()) {
 			SqlProperty sqlProperty = (SqlProperty) node;
 			Comparable comparable = SqlLiteral.value(sqlProperty.getValue());
-			String value = comparable instanceof NlsString ? ((NlsString) comparable).getValue() : comparable.toString();
+			String value = comparable instanceof NlsString ? ((NlsString) comparable).getValue() : comparable
+				.toString();
 			ret.put(sqlProperty.getKey().getSimple(), value);
 		}
 		return ret;
@@ -105,7 +137,8 @@ public class RichSqlInsert extends SqlInsert {
 		return this.tableHints;
 	}
 
-	@Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+	@Override
+	public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
 		writer.startList(SqlWriter.FrameTypeEnum.SELECT);
 		String insertKeyword = "INSERT INTO";
 		if (isUpsert()) {

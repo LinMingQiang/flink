@@ -40,7 +40,6 @@ under the License.
 	</properties>
 
 	<dependencies>
-
 		<!-- core dependencies -->
 
 		<dependency>

@@ -940,6 +940,7 @@ SqlNode RichSqlInsert() :
     final SqlNodeList partitionList = new SqlNodeList(getPos());
     SqlNodeList columnList = null;
     final Span s;
+	SqlEmit emit = null;
 }
 {
     (
@@ -986,9 +987,13 @@ SqlNode RichSqlInsert() :
     [
         <PARTITION> PartitionSpecCommaList(partitionList)
     ]
-    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+	[
+	emit = EmitSpecification()
+	]
+	{
         return new RichSqlInsert(s.end(source), keywordList, extendedKeywordList, table, source,
-            columnList, partitionList);
+            columnList, partitionList, emit);
     }
 }
 
@@ -1430,4 +1435,57 @@ SqlDrop SqlDropExtended(Span s, boolean replace) :
     {
         return drop;
     }
+}
+
+
+SqlEmit EmitSpecification() :
+{
+final Span s;
+final List<SqlNode> strategies = new ArrayList();
+SqlNode strategy;
+}
+{
+	<EMIT> { s = span(); }
+					strategy = SqlEmitStrategy() {
+					strategies.add(strategy);
+					}
+					(
+					<COMMA> strategy = SqlEmitStrategy() {
+						strategies.add(strategy);
+						} )*
+						{
+						return SqlEmit.create(s.end(this), strategies);
+						}
+						}
+
+						SqlNode SqlEmitStrategy() :
+						{
+						String p;
+						SqlIntervalQualifier intervalQualifier;
+						SqlNode delay;
+						Span s;
+						}
+						{
+						(
+						<WITH> <DELAY> { s = span(); }
+								<QUOTED_STRING> { p = token.image; }
+									intervalQualifier = IntervalQualifier() {
+									delay = SqlParserUtil.parseIntervalLiteral(s.end(intervalQualifier),
+									1, p, intervalQualifier);
+									}
+									|
+									<WITHOUT> <DELAY>
+											{
+											delay = SqlEmit.createWithoutDelay(getPos());
+											}
+											)
+											(
+											<BEFORE> <WATERMARK> {
+													return SqlEmit.createBeforeStrategy(delay, getPos());
+													}
+													|
+													<AFTER> <WATERMARK> {
+															return SqlEmit.createAfterStrategy(delay, getPos());
+															}
+															)
 }

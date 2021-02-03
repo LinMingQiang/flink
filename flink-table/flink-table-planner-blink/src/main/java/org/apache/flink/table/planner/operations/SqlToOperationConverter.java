@@ -547,7 +547,8 @@ public class SqlToOperationConverter {
 			query,
 			insert.getStaticPartitionKVs(),
 			insert.isOverwrite(),
-			dynamicOptions);
+			dynamicOptions,
+			insert.getEmit() == null ? 0L: insert.getEmit().getBeforeDelayValue());
 	}
 
 	/** Convert use catalog statement. */

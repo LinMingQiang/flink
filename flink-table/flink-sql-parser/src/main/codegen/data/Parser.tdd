@@ -54,6 +54,7 @@
     "org.apache.flink.sql.parser.ddl.SqlUseDatabase"
     "org.apache.flink.sql.parser.ddl.SqlWatermark"
     "org.apache.flink.sql.parser.dml.RichSqlInsert"
+    "org.apache.flink.sql.parser.dml.SqlEmit"
     "org.apache.flink.sql.parser.dml.RichSqlInsertKeyword"
     "org.apache.flink.sql.parser.dql.SqlDescribeCatalog"
     "org.apache.flink.sql.parser.dql.SqlDescribeDatabase"
@@ -106,6 +107,8 @@
     "VIEWS"
     "VIRTUAL"
     "WATERMARK"
+    "EMIT"
+    "DELAY"
     "WATERMARKS"
   ]
 

@@ -756,7 +756,15 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
 	}
 
 	private TableResult executeOperation(Operation operation) {
+
 		if (operation instanceof ModifyOperation) {
+			if (operation instanceof CatalogSinkModifyOperation) {
+				CatalogSinkModifyOperation tmpOpt = (CatalogSinkModifyOperation) operation;
+				if (tmpOpt.getEmit() > 0) {
+					tableConfig.getConfiguration().setBoolean("table.exec.emit.early-fire.enabled", true);
+					tableConfig.getConfiguration().setLong("table.exec.emit.early-fire.delay", tmpOpt.getEmit());
+				}
+			}
 			return executeInternal(Collections.singletonList((ModifyOperation) operation));
 		} else if (operation instanceof CreateTableOperation) {
 			CreateTableOperation createTableOperation = (CreateTableOperation) operation;
