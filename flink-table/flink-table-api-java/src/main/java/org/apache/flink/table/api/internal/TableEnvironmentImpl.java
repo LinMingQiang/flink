@@ -760,9 +760,19 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
 		if (operation instanceof ModifyOperation) {
 			if (operation instanceof CatalogSinkModifyOperation) {
 				CatalogSinkModifyOperation tmpOpt = (CatalogSinkModifyOperation) operation;
-				if (tmpOpt.getEmit() > 0) {
-					tableConfig.getConfiguration().setBoolean("table.exec.emit.early-fire.enabled", true);
-					tableConfig.getConfiguration().setLong("table.exec.emit.early-fire.delay", tmpOpt.getEmit());
+				if (tmpOpt.getGroupWindowEmitOptions() != null) {
+					if (tmpOpt.getGroupWindowEmitOptions().containsKey("table.exec.emit.early-fire.delay")) {
+						tableConfig.getConfiguration().setBoolean("table.exec.emit.early-fire.enabled", true);
+						tableConfig.getConfiguration().setLong("table.exec.emit.early-fire.delay",
+							tmpOpt.getGroupWindowEmitOptions()
+								.get("table.exec.emit.early-fire.delay"));
+					}
+					if (tmpOpt.getGroupWindowEmitOptions().containsKey("table.exec.emit.late-fire.delay")) {
+						tableConfig.getConfiguration().setBoolean("table.exec.emit.late-fire.enabled", true);
+						tableConfig.getConfiguration().setLong("table.exec.emit.late-fire.delay",
+							tmpOpt.getGroupWindowEmitOptions()
+								.get("table.exec.emit.late-fire.delay"));
+					}
 				}
 			}
 			return executeInternal(Collections.singletonList((ModifyOperation) operation));

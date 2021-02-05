@@ -1,5 +1,6 @@
 package org.apache.flink.sql.parser.dml;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral.IntervalValue;
@@ -65,10 +66,9 @@ public class SqlEmit extends SqlCall {
 		return OPERATOR;
 	}
 
-	@Nonnull
 	@Override
 	public List<SqlNode> getOperandList() {
-		return null;
+		return ImmutableList.of(this.beforeDelay, this.afterDelay);
 	}
 
 	public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {

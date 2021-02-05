@@ -18,6 +18,8 @@
 
 package org.apache.flink.table.planner.operations;
 
+import org.apache.flink.shaded.curator4.com.google.common.collect.ImmutableMap;
+
 import org.apache.flink.sql.parser.ddl.SqlAddPartitions;
 import org.apache.flink.sql.parser.ddl.SqlAddReplaceColumns;
 import org.apache.flink.sql.parser.ddl.SqlAlterDatabase;
@@ -541,14 +543,23 @@ public class SqlToOperationConverter {
 			insert.getSource())
 			.orElseThrow(() -> new TableException(
 				"Unsupported node type " + insert.getSource().getClass().getSimpleName()));
-
+		Map<String, Long> emitConfig = null;
+		if (insert.getEmit() != null) {
+			emitConfig = new HashMap<>();
+			if (insert.getEmit().getAfterDelayValue() > 0) {
+				emitConfig.put("table.exec.emit.late-fire.delay", insert.getEmit().getAfterDelayValue());
+			}
+			if (insert.getEmit().getBeforeDelayValue() > 0) {
+				emitConfig.put("table.exec.emit.early-fire.delay", insert.getEmit().getBeforeDelayValue());
+			}
+		}
 		return new CatalogSinkModifyOperation(
 			identifier,
 			query,
 			insert.getStaticPartitionKVs(),
 			insert.isOverwrite(),
 			dynamicOptions,
-			insert.getEmit() == null ? 0L: insert.getEmit().getBeforeDelayValue());
+			emitConfig);
 	}
 
 	/** Convert use catalog statement. */

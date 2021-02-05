@@ -47,7 +47,6 @@ public class ReduceApplyWindowFunction<K, W extends Window, T, R>
 
 	@Override
 	public void apply(K k, W window, Iterable<T> input, Collector<R> out) throws Exception {
-
 		T curr = null;
 		for (T val: input) {
 			if (curr == null) {

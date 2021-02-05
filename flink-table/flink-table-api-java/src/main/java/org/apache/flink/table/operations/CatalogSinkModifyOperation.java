@@ -38,7 +38,7 @@ public class CatalogSinkModifyOperation implements ModifyOperation {
 	private final boolean overwrite;
 	private final Map<String, String> dynamicOptions;
 
-	private Long emit = 0L;
+	private Map<String, Long> groupWindowEmitOptions = null;
 
 	public CatalogSinkModifyOperation(ObjectIdentifier tableIdentifier, QueryOperation child) {
 		this(tableIdentifier, child, Collections.emptyMap(), false, Collections.emptyMap());
@@ -63,13 +63,13 @@ public class CatalogSinkModifyOperation implements ModifyOperation {
 		Map<String, String> staticPartitions,
 		boolean overwrite,
 		Map<String, String> dynamicOptions,
-		Long emit) {
+		Map<String, Long> groupWindowEmitOptions) {
 		this.tableIdentifier = tableIdentifier;
 		this.child = child;
 		this.staticPartitions = staticPartitions;
 		this.overwrite = overwrite;
 		this.dynamicOptions = dynamicOptions;
-		this.emit = emit;
+		this.groupWindowEmitOptions = groupWindowEmitOptions;
 	}
 
 	public ObjectIdentifier getTableIdentifier() {
@@ -88,8 +88,8 @@ public class CatalogSinkModifyOperation implements ModifyOperation {
 		return dynamicOptions;
 	}
 
-	public Long getEmit() {
-		return emit;
+	public Map<String, Long> getGroupWindowEmitOptions() {
+		return groupWindowEmitOptions;
 	}
 
 	@Override
