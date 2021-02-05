@@ -349,23 +349,24 @@ public class EvictingWindowOperator<K, IN, OUT, W extends Window>
                                     }
                                 });
         evictorContext.evictBefore(recordsWithTimestamp, Iterables.size(recordsWithTimestamp));
+		processContext.window = triggerContext.window;
 
-        FluentIterable<IN> projectedContents =
-                recordsWithTimestamp.transform(
-                        new Function<TimestampedValue<IN>, IN>() {
-                            @Override
-                            public IN apply(TimestampedValue<IN> input) {
-                                return input.getValue();
-                            }
-                        });
-
-        processContext.window = triggerContext.window;
-        userFunction.process(
-                triggerContext.key,
-                triggerContext.window,
-                processContext,
-                projectedContents,
-                timestampedCollector);
+        if (Iterables.size(recordsWithTimestamp) > 0) {
+			FluentIterable<IN> projectedContents =
+				recordsWithTimestamp.transform(
+					new Function<TimestampedValue<IN>, IN>() {
+						@Override
+						public IN apply(TimestampedValue<IN> input) {
+							return input.getValue();
+						}
+					});
+			userFunction.process(
+				triggerContext.key,
+				triggerContext.window,
+				processContext,
+				projectedContents,
+				timestampedCollector);
+		}
         evictorContext.evictAfter(recordsWithTimestamp, Iterables.size(recordsWithTimestamp));
 
 		//work around to fix FLINK-4369, remove the evicted elements from the windowState.
