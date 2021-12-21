@@ -98,6 +98,12 @@ public final class FactoryUtil {
                                     + "By default, if this option is not defined, the planner will derive the parallelism "
                                     + "for each statement individually by also considering the global configuration.");
 
+    public static final ConfigOption<Boolean> LOOKUP_JOIN_PRE_PARTITION =
+            ConfigOptions.key("lookup.join.pre-partition")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription("Define whether lookup join enables pre-partitioning");
+
     /**
      * Suffix for keys of {@link ConfigOption} in case a connector requires multiple formats (e.g.
      * for both key and value).
@@ -547,6 +553,7 @@ public final class FactoryUtil {
 
             consumedOptionKeys = new HashSet<>();
             consumedOptionKeys.add(PROPERTY_VERSION.key());
+            consumedOptionKeys.add(LOOKUP_JOIN_PRE_PARTITION.key());
             Stream.concat(
                             catalogFactory.requiredOptions().stream(),
                             catalogFactory.optionalOptions().stream())
@@ -614,6 +621,7 @@ public final class FactoryUtil {
             this.consumedOptionKeys = new HashSet<>();
             this.consumedOptionKeys.add(PROPERTY_VERSION.key());
             this.consumedOptionKeys.add(CONNECTOR.key());
+            consumedOptionKeys.add(LOOKUP_JOIN_PRE_PARTITION.key());
             this.consumedOptionKeys.addAll(
                     tableFactory.requiredOptions().stream()
                             .map(ConfigOption::key)

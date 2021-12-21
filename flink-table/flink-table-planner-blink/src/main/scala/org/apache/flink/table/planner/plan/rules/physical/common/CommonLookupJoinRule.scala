@@ -25,15 +25,14 @@ import org.apache.flink.table.planner.plan.rules.common.CommonTemporalTableJoinR
 import org.apache.flink.table.planner.plan.schema.TimeIndicatorRelDataType
 import org.apache.flink.table.planner.plan.utils.JoinUtil
 import org.apache.flink.table.sources.LookupableTableSource
-
 import org.apache.calcite.plan.RelOptRule.{any, operand}
 import org.apache.calcite.plan.{RelOptRule, RelOptRuleCall, RelOptTable}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.core.TableScan
 import org.apache.calcite.rex.RexProgram
+import org.apache.flink.table.factories.FactoryUtil
 
 import java.util
-
 import scala.collection.JavaConversions._
 
 /**
@@ -112,6 +111,11 @@ trait CommonLookupJoinRule extends CommonTemporalTableJoinRule {
     input: FlinkLogicalRel,
     temporalTable: RelOptTable,
     calcProgram: Option[RexProgram]): CommonPhysicalLookupJoin
+
+  protected def isNeedPartition(temporalTable: TableScan): Boolean = {
+    temporalTable.getHints.get(0).kvOptions.getOrDefault(FactoryUtil.LOOKUP_JOIN_PRE_PARTITION.key(), "false").equals("true")
+  }
+
 }
 
 abstract class BaseSnapshotOnTableScanRule(description: String)
@@ -127,7 +131,7 @@ abstract class BaseSnapshotOnTableScanRule(description: String)
     val join = call.rel[FlinkLogicalJoin](0)
     val snapshot = call.rel[FlinkLogicalSnapshot](2)
     val tableScan = call.rel[TableScan](3)
-    matches(join, snapshot, tableScan)
+    matches(join, snapshot, tableScan) && !isNeedPartition(tableScan)
   }
 
   override def onMatch(call: RelOptRuleCall): Unit = {
@@ -156,7 +160,7 @@ abstract class BaseSnapshotOnCalcTableScanRule(description: String)
     val join = call.rel[FlinkLogicalJoin](0)
     val snapshot = call.rel[FlinkLogicalSnapshot](2)
     val tableScan = call.rel[TableScan](4)
-    matches(join, snapshot, tableScan)
+    matches(join, snapshot, tableScan) && !isNeedPartition(tableScan)
   }
 
   override def onMatch(call: RelOptRuleCall): Unit = {
@@ -168,6 +172,34 @@ abstract class BaseSnapshotOnCalcTableScanRule(description: String)
     validateJoin(join)
     val temporalJoin = transform(
       join, input, tableScan.getTable, Some(calc.getProgram))
+    call.transformTo(temporalJoin)
+  }
+}
+
+
+abstract class BaseSnapshotOnPartitionTableScanRule(description: String)
+  extends RelOptRule(
+    operand(classOf[FlinkLogicalJoin],
+      operand(classOf[FlinkLogicalRel], any()),
+      operand(classOf[FlinkLogicalSnapshot],
+        operand(classOf[TableScan], any()))),
+    description)
+    with CommonLookupJoinRule {
+
+  override def matches(call: RelOptRuleCall): Boolean = {
+    val join = call.rel[FlinkLogicalJoin](0)
+    val snapshot = call.rel[FlinkLogicalSnapshot](2)
+    val tableScan = call.rel[TableScan](3)
+    matches(join, snapshot, tableScan) && isNeedPartition(tableScan)
+  }
+
+  override def onMatch(call: RelOptRuleCall): Unit = {
+    val join = call.rel[FlinkLogicalJoin](0)
+    val input = call.rel[FlinkLogicalRel](1)
+    val tableScan = call.rel[RelNode](3)
+
+    validateJoin(join)
+    val temporalJoin = transform(join, input, tableScan.getTable, None)
     call.transformTo(temporalJoin)
   }
 

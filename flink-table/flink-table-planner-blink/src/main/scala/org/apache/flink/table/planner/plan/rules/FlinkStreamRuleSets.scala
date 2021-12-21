@@ -449,6 +449,7 @@ object FlinkStreamRuleSets {
     StreamPhysicalTemporalJoinRule.INSTANCE,
     StreamPhysicalLookupJoinRule.SNAPSHOT_ON_TABLESCAN,
     StreamPhysicalLookupJoinRule.SNAPSHOT_ON_CALC_TABLESCAN,
+    StreamPhysicalLookupJoinRule.SNAPSHOT_ON_PARTITION_TABLESCAN,
     StreamPhysicalWindowJoinRule.INSTANCE,
     // CEP
     StreamPhysicalMatchRule.INSTANCE,

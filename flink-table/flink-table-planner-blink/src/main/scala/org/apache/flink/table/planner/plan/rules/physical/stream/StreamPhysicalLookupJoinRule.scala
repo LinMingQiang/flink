@@ -21,10 +21,13 @@ import org.apache.flink.table.planner.plan.nodes.FlinkConventions
 import org.apache.flink.table.planner.plan.nodes.logical._
 import org.apache.flink.table.planner.plan.nodes.physical.common.CommonPhysicalLookupJoin
 import org.apache.flink.table.planner.plan.nodes.physical.stream.StreamPhysicalLookupJoin
-import org.apache.flink.table.planner.plan.rules.physical.common.{BaseSnapshotOnCalcTableScanRule, BaseSnapshotOnTableScanRule}
-
-import org.apache.calcite.plan.{RelOptRule, RelOptTable}
+import org.apache.flink.table.planner.plan.rules.physical.common.{BaseSnapshotOnCalcTableScanRule, BaseSnapshotOnPartitionTableScanRule, BaseSnapshotOnTableScanRule}
+import org.apache.calcite.plan.{RelOptRule, RelOptTable, RelTraitSet}
+import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rex.RexProgram
+import org.apache.flink.table.planner.plan.`trait`.FlinkRelDistribution
+
+import java.util
 
 /**
   * Rules that convert [[FlinkLogicalJoin]] on a [[FlinkLogicalSnapshot]]
@@ -38,6 +41,7 @@ import org.apache.calcite.rex.RexProgram
 object StreamPhysicalLookupJoinRule {
   val SNAPSHOT_ON_TABLESCAN: RelOptRule = new SnapshotOnTableScanRule
   val SNAPSHOT_ON_CALC_TABLESCAN: RelOptRule = new SnapshotOnCalcTableScanRule
+  val SNAPSHOT_ON_PARTITION_TABLESCAN: RelOptRule = new SnapshotOnPartitionTableScanRule
 
   class SnapshotOnTableScanRule
     extends BaseSnapshotOnTableScanRule("StreamPhysicalSnapshotOnTableScanRule") {
@@ -48,6 +52,50 @@ object StreamPhysicalLookupJoinRule {
         temporalTable: RelOptTable,
         calcProgram: Option[RexProgram]): CommonPhysicalLookupJoin = {
       doTransform(join, input, temporalTable, calcProgram)
+    }
+  }
+  class SnapshotOnPartitionTableScanRule
+    extends BaseSnapshotOnPartitionTableScanRule("StreamPhysicalSnapshotOnPartitionTableScanRule") {
+
+    override protected def transform(
+                                      join: FlinkLogicalJoin,
+                                      input: FlinkLogicalRel,
+                                      temporalTable: RelOptTable,
+                                      calcProgram: Option[RexProgram]): CommonPhysicalLookupJoin = {
+      val joinInfo = join.analyzeCondition
+      val cluster = join.getCluster
+
+      def toHashTraitByColumns(
+                                columns: util.Collection[_ <: Number],
+                                inputTraitSet: RelTraitSet): RelTraitSet = {
+        val distribution = if (columns.size() == 0) {
+          FlinkRelDistribution.SINGLETON
+        } else {
+          FlinkRelDistribution.hash(columns)
+        }
+
+        inputTraitSet
+          .replace(FlinkConventions.STREAM_PHYSICAL)
+          .replace(distribution)
+      }
+
+      def convertInput(input: RelNode, columns: util.Collection[_ <: Number]): RelNode = {
+        val requiredTraitSet = toHashTraitByColumns(columns, input.getTraitSet)
+        RelOptRule.convert(input, requiredTraitSet)
+      }
+      val leftConversion: RelNode => RelNode = leftInput => {
+        convertInput(leftInput, joinInfo.leftKeys)
+      }
+      val providedTrait = join.getTraitSet.replace(FlinkConventions.STREAM_PHYSICAL)
+
+      new StreamPhysicalLookupJoin(
+        cluster,
+        providedTrait,
+        leftConversion(input),
+        temporalTable,
+        calcProgram,
+        joinInfo,
+        join.getJoinType)
     }
   }
 
@@ -62,12 +110,11 @@ object StreamPhysicalLookupJoinRule {
       doTransform(join, input, temporalTable, calcProgram)
     }
   }
-
   private def doTransform(
-    join: FlinkLogicalJoin,
-    input: FlinkLogicalRel,
-    temporalTable: RelOptTable,
-    calcProgram: Option[RexProgram]): StreamPhysicalLookupJoin = {
+                           join: FlinkLogicalJoin,
+                           input: FlinkLogicalRel,
+                           temporalTable: RelOptTable,
+                           calcProgram: Option[RexProgram]): StreamPhysicalLookupJoin = {
 
     val joinInfo = join.analyzeCondition
 

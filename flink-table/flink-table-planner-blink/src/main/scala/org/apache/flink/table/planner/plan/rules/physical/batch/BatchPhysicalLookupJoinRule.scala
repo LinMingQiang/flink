@@ -22,9 +22,10 @@ import org.apache.flink.table.planner.plan.nodes.logical._
 import org.apache.flink.table.planner.plan.nodes.physical.batch.BatchPhysicalLookupJoin
 import org.apache.flink.table.planner.plan.nodes.physical.common.CommonPhysicalLookupJoin
 import org.apache.flink.table.planner.plan.rules.physical.common.{BaseSnapshotOnCalcTableScanRule, BaseSnapshotOnTableScanRule}
-
 import org.apache.calcite.plan.{RelOptRule, RelOptTable}
+import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rex.RexProgram
+import org.apache.flink.table.planner.plan.rules.physical.stream.StreamPhysicalLookupJoinRule.doTransform
 
 /**
   * Rules that convert [[FlinkLogicalJoin]] on a [[FlinkLogicalSnapshot]]
@@ -61,7 +62,6 @@ object BatchPhysicalLookupJoinRule {
         calcProgram: Option[RexProgram]): CommonPhysicalLookupJoin = {
       doTransform(join, input, temporalTable, calcProgram)
     }
-
   }
 
   private def doTransform(
